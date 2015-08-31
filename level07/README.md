@@ -12,6 +12,7 @@ By reversing the libpak.so, I managed to understand the way how the binary works
 - easy to "implement" encryption/decryption by using libpak.so and invoking the functions<br />
 - after decryption, the run_pak_vm runs on the decrypted pak which is a DFA (Deterministic Finite Automata)<br />
 <br />
+<br />
 The automata can do the following things:<br />
 - write any 4bytes into a variable on stack<br />
 - write arbitrary message into a variable that is allocated on the fly on the heap<br />
@@ -24,6 +25,7 @@ The automata can do the following things:<br />
 - write data into a file from a memory address<br />
 - write any 4 bytes into any memory address (seems nice, isn't it?)<br />
 <br />
+<br />
 I wrote multiple python scripts and c codes to solve this level:<br />
 - level07.client.py - asks the server to connect back to us and/or send any udp packet with the opcode and arguments<br />
 - level07.server.py - listens on the specified port and wait for incoming connection to serve the level07.pak file encoded<br />
@@ -32,6 +34,7 @@ I wrote multiple python scripts and c codes to solve this level:<br />
 - level07.makepak.py - DFA implemented in python, works as a "library", you can craft your on "commands"<br />
 - level07.makepak.final.py - actual exploit<br />
 - level07.so.c - shared object c file<br />
+<br />
 <br />
 How I tried:<br />
 First I tried to resolve a function address to have a fix address and later to substract the difference which is constant, but because of the substraction was not implemented properly (maybe on purpose) I could not solve this problem, to find a reliable way to gain knowledge about the base address.<br />
