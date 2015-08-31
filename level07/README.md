@@ -5,12 +5,12 @@ In a few sentences here are some thoughts:<br />
 <br />
 level07 binary registers two functions into a linked list and both of them could have called with a special prefix (the opcode of the function). But after loading and calling the libpak.so, it is going to read up the default .pak file which removes the second registered function (execute_command), so the easy way to execute code is gone by default.<br />
 By reversing the libpak.so, I managed to understand the way how the binary works:<br />
-> load_new_pakfile can be invoked by an UDP packet previously explained<br />
-> it connects back to us for the pak file encoded<br />
-> encoding is easy, explained by the source<br />
-> encrypted pak is sent and decoded, and will be decrypted by the libpak with rc4<br />
-> easy to "implement" encryption/decryption by using libpak.so and invoking the functions<br />
-> after decryption, the run_pak_vm runs on the decrypted pak which is a DFA (Deterministic Finite Automata)<br />
+- load_new_pakfile can be invoked by an UDP packet previously explained<br />
+- it connects back to us for the pak file encoded<br />
+- encoding is easy, explained by the source<br />
+- encrypted pak is sent and decoded, and will be decrypted by the libpak with rc4<br />
+- easy to "implement" encryption/decryption by using libpak.so and invoking the functions<br />
+- after decryption, the run_pak_vm runs on the decrypted pak which is a DFA (Deterministic Finite Automata)<br />
 <br />
 The automata can do the following things:<br />
 - write any 4bytes into a variable on stack<br />
