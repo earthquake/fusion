@@ -4,7 +4,7 @@ Again a few months have passed to solve? this level. Wasn't easy, but it looks l
 ## Source code
 
 The source is the usual, we do not have access to everything some functions are "made-up" (source codes are not published), but still understandable. The binary starts and binds on the port tcp/20008 as usual and listens. When a client connects then it spawns a new process (same process but with *--client* arg) by calling *execve()*. This is important from exploiting POV, because it uses *execve()* and not *fork()*, a fully new process will be started. *fork()* copies the memory and give the execution to the process. By the *fork* way the stack canary will be the same and if there is a possibility (which is there in this scenario), then we can bruteforce the canaries. But because of the *execve()*, we can't do that unfortunately, which was a big bottleneck for me at the moment.  
-Furthermore whe the process is restarted calls *chroot()* and *chdir()* into the */home/level08* directory and drops all the privileges, even the effective and saved uid/gid. This means we have to break out from chroot with an unprivileged user. Based on my research you can only do that in two scenarios:
+Furthermore when the process is restarted calls *chroot()* and *chdir()* into the */home/level08* directory and drops all the privileges, even the effective and saved uid/gid. This means we have to break out from chroot with an unprivileged user. Based on my research you can only do that in two scenarios:
 - ptrace: a non-chrooted process exists on the system with the same uid and ptrace can be used
 - move-out-of-chroot: other chrooted process moves out your cwd from the chroot of the process.
 
@@ -12,13 +12,13 @@ None of the above scenarios will work for you. There is no other process which i
 
 ## Encryption
 
-After the initialization phase the spawned process will handle your requests. The communication is encrypted with NaCl (Networking and Cryptography library) which has asymmetric (public-key) encryption routins that are used here. I try to stick to python, which isn't always the best idea. As it turned out that python has two nacl library/wrapper that could be used. Unfortunately the pynacl wasn't working the same way as the c library, gave different results for me, so I changed to pysodium wrapper. Big up Stef!  
-Life isn't just that easy. Probably something have changed in libsodium, but pysodium wasn't working right away. As far as I remember it looked for a symbol in the library which doesn't exist anymore, furtunately it was an easy fix.  
+After the initialization phase the spawned process will handle your requests. The communication is encrypted with NaCl (Networking and Cryptography library) which has asymmetric (public-key) encryption routines that are used here. I try to stick to python, which isn't always the best idea. As it turned out that python has two NaCl library/wrapper that could be used. Unfortunately the pynacl wasn't working the same way as the c library, gave different results for me, so I changed to pysodium wrapper. Big up Stef!  
+Life isn't just that easy. Probably something have changed in libsodium, but pysodium wasn't working right away. As far as I remember it looked for a symbol in the library which doesn't exist anymore, fortunately it was an easy fix.  
 Then I wrote some c and python code to match up with the binary and figured it slowly (Yepp I'm slow sometimes I just mixing up things which make no sense after things are fixed, but who doesn't?). You can find my ugly c tests in the repo.
 
 ## Usage
 
-After connecting to the server it will send you it's public key. You generate one key pair and send your public key to the server. Encryption and decyption will be done with these keys. After the key exchange you can send arbitrary data, encrypted data will land in the decryption queue, then the process queue will process it and an output will be generated. The output will land in the ecryption queue and after encryption it will be sent to you. That's what the code does.  
+After connecting to the server it will send you it's public key. You generate one key pair and send your public key to the server. Encryption and decryption will be done with these keys. After the key exchange you can send arbitrary data, encrypted data will land in the decryption queue, then the process queue will process it and an output will be generated. The output will land in the encryption queue and after encryption it will be sent to you. That's what the code does.  
 The most important part for us the process queue/pool which handles our input. It does either of the following:
 - *m0777name* - creates a directory with the name *"name"* and mode *0777*
 - *o0777name* - opens *(O_CREAT|O_TRUNC|O_WRONLY)* file named *"name"* with mode *0777* and outputs the number of the file descriptor
@@ -30,7 +30,7 @@ Okay, we can write files on the server under the /home/level08 (because of the c
 ## Exploitation
 
 The website states this is a stack overflow, but after *level07* nobody can be sure about that, right? After my script was working properly I tried to find the vulnerable part. The macro *set_str_buffer* looked really nasty first (because of the *strcpy()*) but unfortunately all  inputs are hardcoded.  
-I found two ways to corrput the stack, first is based on the hints that can be found in *decryption_worker()* - threads are not locked properly, could mean (and means) some corruption for us.  
+I found two ways to corrupt the stack, first is based on the hints that can be found in *decryption_worker()* - threads are not locked properly, could mean (and means) some corruption for us.  
 The other one which is more reliable and nice is the *sanity_check_name()*. It has a fixed size buffer called buf and we can overflow that with the *realpath()* function. It is really easy and trivial to do, so we could be pleased until we realize that the binary was compiled with SSP, so we have a stack canary that protects the stack:  
 > stack smashing detected ***: /opt/fusion/bin/level08 terminated
 
@@ -44,16 +44,16 @@ Stack overflow exploitation without writing code to the stack, nice huh? There i
 
 ## Steps summarized
 
-1. implement encryption and decryption routins
+1. implement encryption and decryption routines
 2. open the lib/i386-linux-gnu/libgcc_s.so.1 file
 3. overwrite with your shared library (_init function will be executed)
-4. close the file decriptor
+4. close the file descriptor
 5. create a directory - trigger overflow
 6. init function runs
 
 ## Chroot
 
-We can execute any code in the chrooted environment, even spawn a shell, but what's the point? We are still enclosed with our unprivileged user. Based on the previous levels there was no requirement to gain root, so I doubt that would be the next step. My solution would had been to create a .ssh directory (which is forbidden in the binary, I thought it is a hint as well) and upload my pub key into the authorized_keys file and log in thru ssh. This approach doesn't work, because our user (*level08*) isn't in the passwd file unfortunately, so sshd doesn't let us in. I have no other ideas hwo to break out. If you do please drop me a mail, I really excited to see how others solve this challange.
+We can execute any code in the chrooted environment, even spawn a shell, but what's the point? We are still enclosed with our unprivileged user. Based on the previous levels there was no requirement to gain root, so I doubt that would be the next step. My solution would had been to create a .ssh directory (which is forbidden in the binary, I thought it is a hint as well) and upload my pub key into the authorized_keys file and log in thru ssh. This approach doesn't work, because our user (*level08*) isn't in the passwd file unfortunately, so sshd doesn't let us in. I have no other ideas hwo to break out. If you do please drop me a mail, I really excited to see how others solve this challenge.
 
 Twitter: @xoreipeip
 
