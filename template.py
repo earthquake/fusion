@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import socket
 
-TCP_IP = '172.16.193.195'
+TCP_IP = '10.0.0.1'
 TCP_PORT = 20004
 BUFFER_SIZE = 1024
 
