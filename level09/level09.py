@@ -32,7 +32,7 @@ def rop_add_to_addr(what, where):
 	return rop
 
 
-UDP_IP = '172.16.193.195'
+UDP_IP = '10.0.0.1'
 UDP_PORT = 20009
 BUFFER_SIZE = 1024
 
